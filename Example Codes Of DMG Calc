@@ -1,0 +1,671 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using Npgsql;
+using System.IO;
+
+namespace Max_Damage_Calc
+{
+    public partial class Form1 : Form
+    {
+        Double EffectiveStrength = 0;
+        Double BaseDamage = 0;
+        Double EffectiveLevel1 = 0;
+        Double EffectiveLevel2 = 0;
+        Double EffectiveLevel3 = 0;
+        int GearStrBonus = 0;
+        int head, cape, ammunition, neck, weapon, body, shield, legs, hands, feet, ring = 0;
+
+        public Form1()
+        {
+            InitializeComponent();
+            Main();
+            comboBox6.Visible = false;
+            comboBox7.Visible = false;
+            comboBox8.Visible = false;
+            comboBox9.Visible = false;
+            label10.Visible = false;
+            label11.Visible = false;
+        }
+
+        public void GetEquipmentData()
+        {
+            ComboBox[] SlotBox = new ComboBox[]
+            {
+                HeadBox, CapeBox, AmmunitionBox, NeckBox, WeaponBox, BodyBox, ShieldBox, LegsBox, HandsBox, FeetBox, RingBox
+            };
+
+            HideSlotBox(SlotBox);
+
+            string[] Algeros = new string[]
+            {
+                "headslot", "capeslot", "ammunitionslot", "neckslot", "weaponslot", "bodyslot", "shieldslot", "legsslot", "handsslot", "feetslot", "ringslot"
+            };
+            int b = 0;
+            foreach (ComboBox a in SlotBox)
+            { 
+                GetItems(Algeros[b], SlotBox, b);
+                b++;
+            }
+        }
+
+        public void HideSlotBox(ComboBox[] SlotBox)
+        {
+            foreach (ComboBox a in SlotBox)
+            {
+                a.Visible = false;
+            }
+        }
+
+        private static NpgsqlConnection GetConnection()
+        {
+            return new NpgsqlConnection(@"Server=localhost;Port=5432;User Id=postgres;Password=Lalli696;Database=postgres;");
+
+        }
+
+        private void GetItems(String RequestItem, ComboBox[] SlotBox, int SlotIndex)
+        {
+            using (NpgsqlConnection Ramoldes = GetConnection())
+            {
+                Ramoldes.Open();
+                NpgsqlCommand command = new NpgsqlCommand("SELECT * FROM " + RequestItem, Ramoldes);
+                NpgsqlDataReader read = command.ExecuteReader();
+
+                while (read.Read())
+                {
+                    SlotBox[SlotIndex].Items.Add(read.GetString(read.GetOrdinal("itemname")).ToString());
+                }
+                Ramoldes.Close();
+            }
+        }
+
+        private int getSQLstr(string TableToSearchFrom, string ItemToSearch)
+        {
+            int RequestStr = 0;
+            using(NpgsqlConnection Reiska = GetConnection())
+            {
+                Reiska.Open();
+                NpgsqlCommand command = new NpgsqlCommand("SELECT * FROM " + TableToSearchFrom + " WHERE itemname LIKE '" + ItemToSearch + "';", Reiska);
+                NpgsqlDataReader read = command.ExecuteReader();
+
+                while (read.Read())
+                {
+                    RequestStr = read.GetInt32(read.GetOrdinal("meleestrength"));
+                }
+                Reiska.Close();
+                return RequestStr;
+            }
+        }
+
+        private void textBox1_Click(object sender, EventArgs e)
+        {
+            if (textBox1.Text == "Insert Bonus")
+            {
+                textBox1.Text = "";
+            }
+        }
+
+        private void textBox1_Leave(object sender, EventArgs e)
+        {
+            if (textBox1.Text == "")
+            {
+                textBox1.Text = "Insert Bonus";
+            }
+        }
+
+        private void textBox2_Click(object sender, EventArgs e)
+        {
+            if (textBox2.Text == "Insert Level")
+            {
+                textBox2.Text = "";
+            }
+        }
+        private void textBox2_Leave(object sender, EventArgs e)
+        {
+            if (textBox2.Text == "")
+            {
+                textBox2.Text = "Insert Level";
+            }
+        }
+
+        private void textBox2_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) &&
+                (e.KeyChar != '.'))
+            {
+                e.Handled = true;
+            }
+        }
+
+
+
+
+
+
+        public void Main()
+        {
+            SetStyle();
+            SetPrayer();
+            SetPotion();
+            SetOthers();
+            GetEquipmentData();
+        }
+
+        public void SetStyle()
+        {
+            string[] Style = new string[]
+            {
+            "Select", "Accurate (+0)", "Aggressive (+3)", "Defensive (+0)", "Controlled (+1)"
+            };
+
+            comboBox3.Items.AddRange(Style);
+            comboBox3.SelectedIndex = 0;
+        }
+
+        public void SetPotion()
+        {
+            string[] Potion = new string[]
+            {
+            "None", "Strength", "Super Strength"
+            };
+
+            comboBox1.Items.AddRange(Potion);
+            comboBox1.SelectedIndex = 0;
+        }
+
+        public void SetPrayer()
+        {
+            string[] Prayer = new string[]
+            {
+            "None", "Ultimate Strength (+15 %)", "Chivalry (+18 %)", "Piety (+23 %)"
+            };
+
+            comboBox2.Items.AddRange(Prayer);
+            comboBox2.SelectedIndex = 0;
+        }
+
+        public void SetOthers()
+        {
+            string[] Others = new string[]
+            {
+            "None", "Slayer Helmet", "Void Armor", "Salve Amulet"
+            };
+
+            comboBox4.Items.AddRange(Others);
+            comboBox5.Items.AddRange(Others);
+            comboBox4.SelectedIndex = 0;
+            comboBox5.SelectedIndex = 0;
+        }
+
+        public void ExtraIndex()
+        {
+            string[] Voids = new string[]
+            {
+                "Normal", "Elite"
+            };
+
+            if (!comboBox6.Items.Contains("Normal"))
+            {
+                comboBox6.Items.AddRange(Voids);
+                comboBox6.SelectedIndex = 0;
+            }
+            comboBox8.Items.AddRange(Voids);
+            comboBox8.SelectedIndex = 0;
+
+            string[] Salves = new string[]
+            {
+                "Normal", "Enchanted"
+            };
+
+            if (!comboBox7.Items.Contains("Normal"))
+            {
+                comboBox7.Items.AddRange(Salves);
+                comboBox7.SelectedIndex = 0;
+            }
+            comboBox9.Items.AddRange(Salves);
+            comboBox9.SelectedIndex = 0;
+        }
+
+        public void Extra()
+        {
+            ExtraIndex();
+
+            if (comboBox4.Text == "Void Armor")
+            {
+                label10.Visible = true;
+                comboBox6.Visible = true;
+            }
+            if (comboBox4.Text == "Salve Amulet")
+            {
+                label10.Visible = true;
+                comboBox7.Visible = true;
+            }
+            if (comboBox5.Text == "Void Armor")
+            {
+                label11.Visible = true;
+                comboBox8.Visible = true;
+            }
+            if (comboBox5.Text == "Salve Amulet")
+            {
+                label11.Visible = true;
+                comboBox9.Visible = true;
+            }
+        }
+
+        private void comboBox4_SelectedValueChanged(object sender, EventArgs e)
+        {
+            if (comboBox4.Text == "Salve Amulet" || comboBox4.Text == "Void Armor")
+            {
+                comboBox5.Enabled = true;
+            }
+            else
+            {
+                comboBox5.Enabled = false;
+            }
+
+            comboBox6.Items.Clear();
+            comboBox7.Items.Clear();
+            comboBox6.Visible = false;
+            comboBox7.Visible = false;
+            label10.Visible = false;
+
+            string[] Items = new string[]
+            {"None", "Slayer Helmet", "Void Armor", "Salve Amulet"};
+
+            comboBox5.Items.Clear();
+            comboBox5.Items.AddRange(Items);
+            Extra();
+
+            if (comboBox4.Text == "Slayer Helmet")
+            {
+                comboBox5.Items.Remove("Void Armor");
+                comboBox5.Items.Remove("Slayer Helmet");
+                comboBox5.Items.Remove("Salve Amulet");
+            }
+
+            if (comboBox4.Text == "Void Armor")
+            {
+                comboBox5.Items.Remove("Void Armor");
+                comboBox5.Items.Remove("Slayer Helmet");
+            }
+
+            if (comboBox4.Text == "Salve Amulet")
+            {
+                comboBox5.Items.Remove("Slayer Helmet");
+                comboBox5.Items.Remove("Salve Amulet");
+            }
+            comboBox5.SelectedIndex = 0;
+        }
+
+        private void comboBox5_SelectedValueChanged(object sender, EventArgs e)
+        {
+            comboBox8.Items.Clear();
+            comboBox9.Items.Clear();
+            comboBox8.Visible = false;
+            comboBox9.Visible = false;
+            label11.Visible = false;
+            Extra();
+        }
+
+
+        public void button1_Click(object sender, EventArgs e)
+        {
+            if (comboBox3.SelectedIndex == 0)
+            {
+                MessageBox.Show("Please Select Attack style!");
+                return;
+            }
+            if (textBox1.Text == "Insert Bonus" || textBox1.Text == "" || Convert.ToInt32(textBox1.Text) < 0 || Convert.ToInt32(textBox1.Text) > 204)
+            {
+                textBox1.Text = "0";
+            }
+            if (textBox2.Text == "Insert Level" || textBox2.Text == "" || Convert.ToInt32(textBox2.Text) < 0 || Convert.ToInt32(textBox2.Text) > 99)
+            {
+                textBox2.Text = "1";
+            }
+
+            EffectiveStrength = ((Convert.ToDouble(textBox2.Text) + PotionBonus()) * PrayerBonus() * OtherBonus1() * OtherBonus2()) + Style();
+            Double BaseDamage = (1.3 + (EffectiveStrength / 10) + ((Convert.ToDouble(textBox1.Text) / 80) + ((EffectiveStrength * Convert.ToDouble(textBox1.Text))) / 640));
+
+            label5.Text = BaseDamage.ToString();
+        }
+
+        public float Style()
+        {
+            switch (comboBox3.SelectedIndex)
+            {
+                case 2:
+                    return 3;
+                case 4:
+                    return 1;
+            }
+            return 0;
+        }
+
+        public double PotionBonus()
+        {
+            switch (comboBox1.SelectedIndex)
+            {
+                case 1:
+                    return (3 + Math.Floor(0.1 * Convert.ToDouble(textBox2.Text)));
+                case 2:
+                    return (5 + Math.Floor(0.15 * Convert.ToDouble(textBox2.Text)));
+            }
+            return 0;
+        }
+
+        public double PrayerBonus()
+        {
+            switch (comboBox2.SelectedIndex)
+            {
+                case 1:
+                    return 1.15;
+                case 2:
+                    return 1.18;
+                case 3:
+                    return 1.23;
+            }
+            return 1;
+        }
+
+        public double OtherBonus1()
+        {
+           if (comboBox4.Text == "Void Armor")
+            {
+                if (comboBox6.Text == "Normal")
+                {
+                    return 1.10;
+                }
+                if (comboBox6.Text == "Elite")
+                {
+                    return 1.10;
+                }
+            }
+            if (comboBox4.Text == "Salve Amulet")
+            {
+                if (comboBox7.Text == "Normal")
+                {
+                    return 1.15;
+                }
+                if (comboBox7.Text == "Enchanted")
+                {
+                    return 1.20;
+                }
+            }
+            if (comboBox4.Text == "Slayer Helmet")
+                {
+                    return 1.1666666;
+                }
+            return 1;
+        }
+
+        public double OtherBonus2()
+        {
+           if(comboBox5.Text == "Void Armor")
+            {
+                if (comboBox8.Text == "Normal")
+                {
+                    return 1.10;
+                }
+                if (comboBox8.Text == "Elite")
+                {
+                    return 1.10;
+                }
+            }
+           if(comboBox5.Text == "Salve Amulet")
+            {
+                if (comboBox9.Text == "Normal")
+                {
+                    return 1.15;
+                }
+                if (comboBox9.Text == "Enchanted")
+                {
+                    return 1.20;
+                }
+            }
+            return 1;
+        }
+
+
+
+
+        private void HeadPic_Click(object sender, EventArgs e)
+        {
+            HeadBox.Visible = true;
+            HeadBox.DroppedDown = true;
+        }
+
+        private void HeadBox_DropDownClosed(object sender, EventArgs e)
+        {
+            HeadBox.Visible = false;
+            if (HeadBox.Text == "") { return; }
+            head = getSQLstr("headslot", HeadBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+        private void CapePic_Click(object sender, EventArgs e)
+        {
+            CapeBox.Visible = true;
+            CapeBox.DroppedDown = true;
+        }
+        private void CapeBox_DropDownClosed(object sender, EventArgs e)
+        {
+            CapeBox.Visible = false;
+            if (CapeBox.Text == "") { return; }
+            cape = getSQLstr("capeslot", CapeBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+        private void NeckPic_Click(object sender, EventArgs e)
+        {
+            NeckBox.Visible = true;
+            NeckBox.DroppedDown = true;
+        }
+        private void NeckBox_DropDownClosed(object sender, EventArgs e)
+        {
+            NeckBox.Visible = false;
+            if (NeckBox.Text == "") { return; }
+            neck = getSQLstr("neckslot", NeckBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+        private void AmmunitionPic_Click(object sender, EventArgs e)
+        {
+            AmmunitionBox.Visible = true;
+            AmmunitionBox.DroppedDown = true;
+        }
+        private void AmmunitionBox_DropDownClosed(object sender, EventArgs e)
+        {
+            AmmunitionBox.Visible = false;
+            if (AmmunitionBox.Text == "") { return; }
+            ammunition = getSQLstr("ammunitionslot", AmmunitionBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+        private void WeaponPic_Click(object sender, EventArgs e)
+        {
+            WeaponBox.Visible = true;
+            WeaponBox.DroppedDown = true;
+        }
+        private void WeaponBox_DropDownClosed(object sender, EventArgs e)
+        {
+            WeaponBox.Visible = false;
+            if (WeaponBox.Text == "") { return; }
+            weapon = getSQLstr("weaponslot", WeaponBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+        private void BodyPic_Click(object sender, EventArgs e)
+        {
+            BodyBox.Visible = true;
+            BodyBox.DroppedDown = true;
+        }
+        private void BodyBox_DropDownClosed(object sender, EventArgs e)
+        {
+            BodyBox.Visible = false;
+            if (BodyBox.Text == "") { return; }
+            body = getSQLstr("bodyslot", BodyBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+        private void ShieldPic_Click(object sender, EventArgs e)
+        {
+            ShieldBox.Visible = true;
+            ShieldBox.DroppedDown = true;
+        }
+        private void ShieldBox_DropDownClosed(object sender, EventArgs e)
+        {
+            ShieldBox.Visible = false;
+            if (ShieldBox.Text == "") { return; }
+            shield = getSQLstr("shieldslot", ShieldBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+
+        private void LegsPic_Click(object sender, EventArgs e)
+        {
+            LegsBox.Visible = true;
+            LegsBox.DroppedDown = true;
+        }
+
+        private void Form1_MouseHover(object sender, EventArgs e)
+        {
+            label9.Visible = false;
+        }
+
+        private void Form1_MouseLeave(object sender, EventArgs e)
+        {
+            label9.Visible = true;
+        }
+
+        private void LegsBox_DropDownClosed(object sender, EventArgs e)
+        {
+            LegsBox.Visible = false;
+            if (LegsBox.Text == "") { return; }
+            legs = getSQLstr("legsslot", LegsBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+        private void HandsPic_Click(object sender, EventArgs e)
+        {
+            HandsBox.Visible = true;
+            HandsBox.DroppedDown = true;
+        }
+        private void HandsBox_DropDownClosed(object sender, EventArgs e)
+        {
+            HandsBox.Visible = false;
+            if (HandsBox.Text == "") { return; }
+            hands = getSQLstr("handsslot", HandsBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+        private void FeetPic_Click(object sender, EventArgs e)
+        {
+            FeetBox.Visible = true;
+            FeetBox.DroppedDown = true;
+        }
+        private void FeetBox_DropDownClosed(object sender, EventArgs e)
+        {
+            FeetBox.Visible = false;
+            if (FeetBox.Text == "") { return; }
+            feet = getSQLstr("feetslot", FeetBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+
+        private void RingPic_Click(object sender, EventArgs e)
+        {
+            RingBox.Visible = true;
+            RingBox.DroppedDown = true;
+        }
+        private void RingBox_DropDownClosed(object sender, EventArgs e)
+        {
+            RingBox.Visible = false;
+            if (RingBox.Text == "") { return; }
+            ring = getSQLstr("ringslot", RingBox.Text.Replace("'", "_"));
+            setStrBonus();
+        }
+
+        private void setStrBonus()
+        {
+            GearStrBonus = head + cape + ammunition + neck + weapon + body + shield + legs + hands + feet + ring;
+            textBox1.Text = GearStrBonus.ToString();
+        }
+
+
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            label9.Location = PointToClient(new Point(MousePosition.X - 25, MousePosition.Y - 50));
+        }
+
+        private void GroupHoverStatistics(object sender, EventArgs e)
+        {
+            timer1.Interval = 10;
+            timer1.Start();
+
+
+            PictureBox current = (PictureBox)sender;
+
+            if (current.Name == HeadPic.Name)
+            {
+                if (HeadBox.Text != ""){label9.Text = HeadBox.Text;}else{label9.Text = "None";}
+            }
+            if (current.Name == CapePic.Name)
+            {
+                if (CapeBox.Text != "") { label9.Text = CapeBox.Text; } else { label9.Text = "None"; }
+            }
+            if (current.Name == NeckPic.Name)
+            {
+                if (NeckBox.Text != "") { label9.Text = NeckBox.Text; } else { label9.Text = "None"; }
+            }
+            if (current.Name == AmmunitionPic.Name)
+            {
+                if (AmmunitionBox.Text != "") { label9.Text = AmmunitionBox.Text; } else { label9.Text = "None"; }
+            }
+            if (current.Name == WeaponPic.Name)
+            {
+                if (WeaponBox.Text != "") { label9.Text = WeaponBox.Text; } else { label9.Text = "None"; }
+            }
+            if (current.Name == BodyPic.Name)
+            {
+                if (BodyBox.Text != "") { label9.Text = BodyBox.Text; } else { label9.Text = "None"; }
+            }
+            if (current.Name == ShieldPic.Name)
+            {
+                if (ShieldBox.Text != "") { label9.Text = ShieldBox.Text; } else { label9.Text = "None"; }
+            }
+            if (current.Name == LegsPic.Name)
+            {
+                if (LegsBox.Text != "") { label9.Text = LegsBox.Text; } else { label9.Text = "None"; }
+            }
+            if (current.Name == HandsPic.Name)
+            {
+                if (HandsBox.Text != "") { label9.Text = HandsBox.Text; } else { label9.Text = "None"; }
+            }
+            if (current.Name == FeetPic.Name)
+            {
+                if (FeetBox.Text != "") { label9.Text = FeetBox.Text; } else { label9.Text = "None"; }
+            }
+            if (current.Name == RingPic.Name)
+            {
+                if (RingBox.Text != "") { label9.Text = RingBox.Text; } else { label9.Text = "None"; }
+            }
+        }
+    }
+}
